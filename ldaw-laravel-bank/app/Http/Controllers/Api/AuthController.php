@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Account;
+use App\Models\Movement;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -71,6 +73,74 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'expires_at' => Carbon::parse($token->expires_at)->toDateTimeString()
         ]);
+    }
+
+    /**
+     * Create account
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function saveAccount(Request $request){
+        $request->validate([
+            'name' => 'required'
+        ]);
+
+        Account::create([
+            'name' => $request->name,
+            'user_id' => auth()->user()->id
+        ]);
+
+        return response()->json([
+            'message' => 'Successfully created account!'
+        ], 201);
+    }
+
+
+    /**
+     * Get accounts information 
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function accountInfo(Request $request, $account){
+        $accountInfo = Account::select("*")->where("account_number", $account)->get();
+
+        return response()->json($accountInfo);
+    }
+
+    /**
+     * Create movement
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function saveMovement(Request $request, $account){
+        $request->validate([
+            'amount' => 'required',
+            'description' => 'required',
+            'type' => 'required'
+        ]);
+
+        $balance = \App\Models\Account::where("account_number", $account)->pluck('current_balance');
+        $accountId = \App\Models\Account::where("account_number", $account)->pluck('id');
+        $after = 0;
+
+        if( $request->type == 1):
+            $after = $balance[0] - $request->amount;
+        else:
+            $after = $balance[0] + $request->amount;
+        endif;
+
+        Movement::create([
+            'type' => $request->type,
+            'description' => $request->description,
+            'before_balance' => $balance[0],
+            'amount' => $request->amount,
+            'after_balance'=> $after,
+            'account_id'=> $accountId[0]
+        ]);
+
+        return response()->json([
+            'message' => 'Successfully created movement!'
+        ], 201);
     }
 
     /**

@@ -25,4 +25,13 @@ Route::group([
     'middleware' => 'auth:api'
 ], function() {
     Route::get('user', 'AuthController@user');
+    Route::post('accounts', 'AuthController@saveAccount');
+    Route::get('accounts/{account}', 'AuthController@accountInfo');
+    Route::post('accounts/{account}/movements', 'AuthController@saveMovement');
+});
+
+Route::group([
+    'middleware' => 'verifiedToken'
+], function(){
+
 });
